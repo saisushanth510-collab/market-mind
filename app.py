@@ -4,9 +4,13 @@ from datetime import datetime
 from services.groq_client import GroqClient
 from services.text_cleaner import TextCleaner
 import json
+from dotenv import load_dotenv
+
+# Load environment variables from .env
+load_dotenv()
 
 app = Flask(__name__)
-app.config['SECRET_KEY'] = 'gsk_33ZGgsk_fykDFmBWZPSx9j5sXw7WWGdy'
+app.config['SECRET_KEY'] = os.getenv("SECRET_KEY")
 
 # Initialize services
 groq_client = GroqClient()
@@ -42,9 +46,9 @@ def lead():
     """Render lead scoring page"""
     return render_template('lead.html')
 
+# -# ------------------- Campaign Route -------------------
 @app.route('/api/generate_campaign', methods=['POST'])
 def generate_campaign():
-    """Generate marketing campaign using AI"""
     try:
         data = request.json
         
@@ -54,33 +58,25 @@ def generate_campaign():
         for field in required_fields:
             if field not in data:
                 return jsonify({'error': f'Missing field: {field}'}), 400
+
+        # ----- MOCK AI RESPONSE FOR TESTING -----
+        ai_response = """
+        {
+          "campaign_objective": "Increase brand awareness",
+          "content_ideas": ["Social media challenge","Influencer reels","Daily tips","Product showcase","Giveaways"],
+          "ad_copy": ["Stay hydrated with EcoSmart","Smart bottle for healthy living","Drink smarter, live healthier"],
+          "call_to_action": "Shop Now",
+          "hashtags": ["#StayHydrated","#SmartBottle","#HealthyLifestyle"],
+          "campaign_timeline": "Week1: Awareness, Week2: Influencers, Week3: Challenge, Week4: Promotion",
+          "expected_metrics": "Reach: 50k, Engagement: 7%"
+        }
+        """
         
-        # Generate prompt for AI
-        prompt = f"""Generate a comprehensive marketing campaign for the following:
-
-Product Name: {data['product_name']}
-Product Description: {data['product_description']}
-Target Audience: {data['target_audience']}
-Marketing Platform: {data['platform']}
-Budget: ${data['budget']}
-Campaign Goal: {data['campaign_goal']}
-
-Please provide a structured response with the following sections:
-1. Campaign Objective
-2. Content Ideas (5 specific ideas)
-3. Ad Copy (3 variations)
-4. Call to Action
-5. Hashtags (relevant to platform)
-6. Campaign Timeline (weekly breakdown)
-7. Expected Engagement Metrics
-
-Format the response in clear sections with headers."""
-
-        # Get AI response
-        ai_response = groq_client.generate(prompt)
-        
-        # Clean the response
+        # Parse and clean the AI response
         cleaned_response = text_cleaner.clean_campaign_response(ai_response)
+
+        # ---- DEBUG PRINT ----
+        print("Cleaned campaign response:", cleaned_response)
         
         # Store generated campaign
         campaign_data = {
@@ -96,9 +92,9 @@ Format the response in clear sections with headers."""
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
+# ------------------- Pitch Route -------------------
 @app.route('/api/generate_pitch', methods=['POST'])
 def generate_pitch():
-    """Generate sales pitch using AI"""
     try:
         data = request.json
         
@@ -108,32 +104,23 @@ def generate_pitch():
         for field in required_fields:
             if field not in data:
                 return jsonify({'error': f'Missing field: {field}'}), 400
-        
-        # Generate prompt for AI
-        prompt = f"""Create a compelling sales pitch for:
 
-Product: {data['product_name']}
-Customer Persona: {data['customer_persona']}
-Industry: {data['industry']}
-Company Size: {data['company_size']}
-Budget Range: {data['budget_range']}
-
-Please provide:
-1. 30-Second Elevator Pitch
-2. Value Proposition
-3. Key Differentiators (3 main points)
-4. Pain Points Solved
-5. Call to Action
-6. Email Pitch Template
-7. LinkedIn Outreach Message
-
-Make it professional and compelling."""
-
-        # Get AI response
-        ai_response = groq_client.generate(prompt)
-        
-        # Clean the response
+        # ----- MOCK AI RESPONSE FOR TESTING -----
+        ai_response = """
+        {
+          "elevator_pitch": "Our EcoSmart bottle keeps you hydrated smarter!",
+          "value_proposition": "Eco-friendly, smart hydration tracking, convenient design",
+          "key_differentiators": ["Smart sensor","Sleek design","Eco-friendly materials"],
+          "pain_points_solved": "Forgets to drink, uses disposable bottles, lacks smart tracking",
+          "call_to_action": "Buy Now",
+          "email_pitch_template": "Introducing EcoSmart Bottle...",
+          "linkedin_outreach_message": "Hey [Name], check out our EcoSmart bottle..."
+        }
+        """
         cleaned_response = text_cleaner.clean_pitch_response(ai_response)
+
+        # ---- DEBUG PRINT ----
+        print("Cleaned pitch response:", cleaned_response)
         
         # Store generated pitch
         pitch_data = {
@@ -149,9 +136,9 @@ Make it professional and compelling."""
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
+# ------------------- Lead Scoring Route -------------------
 @app.route('/api/score_lead', methods=['POST'])
 def score_lead():
-    """Score a lead using AI analysis"""
     try:
         data = request.json
         
@@ -161,31 +148,21 @@ def score_lead():
         for field in required_fields:
             if field not in data:
                 return jsonify({'error': f'Missing field: {field}'}), 400
-        
-        # Generate prompt for AI
-        prompt = f"""Analyze and score this lead:
 
-Lead Name: {data['lead_name']}
-Company: {data['company']}
-Budget: {data['budget']}
-Business Need: {data['business_need']}
-Urgency: {data['urgency']}
-Decision Authority: {data['decision_authority']}
-
-Provide:
-1. Lead Score (0-100)
-2. Lead Category (Hot/Warm/Medium/Cold)
-3. Conversion Probability Percentage
-4. Brief Explanation (2-3 sentences)
-5. Recommended Next Actions (3 specific actions)
-
-Be analytical and precise in your scoring."""
-
-        # Get AI response
-        ai_response = groq_client.generate(prompt)
-        
-        # Parse and clean the response
+        # ----- MOCK AI RESPONSE FOR TESTING -----
+        ai_response = """
+        {
+          "lead_score": 85,
+          "lead_category": "Hot",
+          "conversion_probability": "75%",
+          "explanation": "Lead has high budget, urgent need, and decision authority",
+          "recommended_actions": ["Schedule call","Send demo","Follow up next week"]
+        }
+        """
         lead_score_data = text_cleaner.parse_lead_score(ai_response)
+
+        # ---- DEBUG PRINT ----
+        print("Cleaned lead score response:", lead_score_data)
         
         # Store scored lead
         lead_data = {
@@ -201,13 +178,12 @@ Be analytical and precise in your scoring."""
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
+# ------------------- History Route -------------------
 @app.route('/api/get_history/<content_type>')
 def get_history(content_type):
-    """Get historical generated content"""
     if content_type in generated_content:
         return jsonify(generated_content[content_type])
     return jsonify([])
 
 if __name__ == '__main__':
-
     app.run(debug=True, port=5000)
