@@ -6,7 +6,7 @@ from services.text_cleaner import TextCleaner
 import json
 
 app = Flask(__name__)
-app.config['SECRET_KEY'] = 'your-secret-key-here-change-in-production'
+app.config['SECRET_KEY'] = 'gsk_33ZGgsk_fykDFmBWZPSx9j5sXw7WWGdy'
 
 # Initialize services
 groq_client = GroqClient()
@@ -209,4 +209,5 @@ def get_history(content_type):
     return jsonify([])
 
 if __name__ == '__main__':
+
     app.run(debug=True, port=5000)
