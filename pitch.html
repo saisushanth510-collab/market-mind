@@ -1,0 +1,181 @@
+{% extends "base.html" %}
+
+{% block title %}Sales Pitch Generator - MarketAI Suite{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="page-header">
+        <h1>AI Sales Pitch Generator</h1>
+        <p class="subtitle">Create compelling sales pitches tailored to your customers</p>
+    </div>
+
+    <div class="form-container">
+        <form id="pitchForm" class="ai-form">
+            <div class="form-group">
+                <label for="product_name">Product/Service Name</label>
+                <input type="text" id="product_name" name="product_name" required
+                       placeholder="e.g., CloudSync Enterprise">
+            </div>
+
+            <div class="form-group">
+                <label for="customer_persona">Customer Persona</label>
+                <textarea id="customer_persona" name="customer_persona" rows="3" required
+                          placeholder="Describe your ideal customer (role, challenges, goals)..."></textarea>
+            </div>
+
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="industry">Industry</label>
+                    <input type="text" id="industry" name="industry" required
+                           placeholder="e.g., Healthcare, Finance, Retail">
+                </div>
+
+                <div class="form-group">
+                    <label for="company_size">Company Size</label>
+                    <select id="company_size" name="company_size" required>
+                        <option value="">Select size</option>
+                        <option value="1-10 employees">Startup (1-10)</option>
+                        <option value="11-50 employees">Small (11-50)</option>
+                        <option value="51-200 employees">Medium (51-200)</option>
+                        <option value="201-1000 employees">Large (201-1000)</option>
+                        <option value="1000+ employees">Enterprise (1000+)</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label for="budget_range">Budget Range</label>
+                <select id="budget_range" name="budget_range" required>
+                    <option value="">Select budget</option>
+                    <option value="Under $1,000/month">Under $1,000/month</option>
+                    <option value="$1,000-$5,000/month">$1,000-$5,000/month</option>
+                    <option value="$5,000-$20,000/month">$5,000-$20,000/month</option>
+                    <option value="$20,000-$50,000/month">$20,000-$50,000/month</option>
+                    <option value="Over $50,000/month">Over $50,000/month</option>
+                </select>
+            </div>
+
+            <button type="submit" class="btn btn-primary btn-large">
+                Generate Sales Pitch
+            </button>
+        </form>
+    </div>
+
+    <div id="resultContainer" class="result-container" style="display: none;">
+        <div class="result-header">
+            <h2>Your AI-Generated Sales Pitch</h2>
+            <button id="copyButton" class="btn btn-secondary">Copy to Clipboard</button>
+        </div>
+
+        <div class="result-sections">
+            <div class="result-section">
+                <h3>30-Second Elevator Pitch</h3>
+                <div class="pitch-box">
+                    <p id="elevator-pitch"></p>
+                </div>
+            </div>
+
+            <div class="result-section">
+                <h3>Value Proposition</h3>
+                <p id="value-proposition"></p>
+            </div>
+
+            <div class="result-section">
+                <h3>Key Differentiators</h3>
+                <ul id="differentiators"></ul>
+            </div>
+
+            <div class="result-section">
+                <h3>Pain Points Solved</h3>
+                <p id="pain-points"></p>
+            </div>
+
+            <div class="result-section">
+                <h3>Call to Action</h3>
+                <div class="cta-box">
+                    <p id="pitch-cta"></p>
+                </div>
+            </div>
+
+            <div class="result-section">
+                <h3>Email Pitch Template</h3>
+                <div class="template-box">
+                    <pre id="email-template"></pre>
+                </div>
+            </div>
+
+            <div class="result-section">
+                <h3>LinkedIn Outreach Message</h3>
+                <div class="template-box">
+                    <pre id="linkedin-message"></pre>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.getElementById('pitchForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    
+    const formData = new FormData(e.target);
+    const data = Object.fromEntries(formData);
+    
+    showLoading('Crafting your perfect sales pitch...');
+    
+    try {
+        const response = await fetch('/api/generate_pitch', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(data)
+        });
+        
+        const result = await response.json();
+        
+        if (result.success) {
+            displayPitchResult(result.pitch);
+        } else {
+            alert('Error: ' + result.error);
+        }
+    } catch (error) {
+        alert('Error generating pitch: ' + error.message);
+    } finally {
+        hideLoading();
+    }
+});
+
+function displayPitchResult(pitch) {
+    document.getElementById('elevator-pitch').textContent = pitch.elevator_pitch || 'No elevator pitch provided';
+    document.getElementById('value-proposition').textContent = pitch.value_proposition || 'No value proposition provided';
+    
+    const differentiatorsList = document.getElementById('differentiators');
+    differentiatorsList.innerHTML = '';
+    (pitch.differentiators || []).forEach(item => {
+        const li = document.createElement('li');
+        li.textContent = item;
+        differentiatorsList.appendChild(li);
+    });
+    
+    document.getElementById('pain-points').textContent = pitch.pain_points || 'No pain points provided';
+    document.getElementById('pitch-cta').textContent = pitch.call_to_action || 'No CTA provided';
+    document.getElementById('email-template').textContent = pitch.email_template || 'No email template provided';
+    document.getElementById('linkedin-message').textContent = pitch.linkedin_message || 'No LinkedIn message provided';
+    
+    document.getElementById('resultContainer').style.display = 'block';
+    document.getElementById('resultContainer').scrollIntoView({ behavior: 'smooth' });
+}
+
+document.getElementById('copyButton').addEventListener('click', () => {
+    const resultText = document.querySelector('.result-sections').innerText;
+    navigator.clipboard.writeText(resultText).then(() => {
+        const btn = document.getElementById('copyButton');
+        btn.textContent = 'Copied!';
+        setTimeout(() => {
+            btn.textContent = 'Copy to Clipboard';
+        }, 2000);
+    });
+});
+</script>
+{% endblock %}

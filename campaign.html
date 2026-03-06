@@ -1,0 +1,198 @@
+{% extends "base.html" %}
+
+{% block title %}Campaign Generator - MarketAI Suite{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="page-header">
+        <h1>AI Marketing Campaign Generator</h1>
+        <p class="subtitle">Generate comprehensive marketing campaigns in seconds</p>
+    </div>
+
+    <div class="form-container">
+        <form id="campaignForm" class="ai-form">
+            <div class="form-group">
+                <label for="product_name">Product Name</label>
+                <input type="text" id="product_name" name="product_name" required 
+                       placeholder="e.g., EcoClean Pro">
+            </div>
+
+            <div class="form-group">
+                <label for="product_description">Product Description</label>
+                <textarea id="product_description" name="product_description" rows="4" required
+                          placeholder="Describe your product, its features, and benefits..."></textarea>
+            </div>
+
+            <div class="form-group">
+                <label for="target_audience">Target Audience</label>
+                <input type="text" id="target_audience" name="target_audience" required
+                       placeholder="e.g., Environmentally conscious millennials aged 25-35">
+            </div>
+
+            <div class="form-group">
+                <label for="platform">Marketing Platform</label>
+                <select id="platform" name="platform" required>
+                    <option value="">Select a platform</option>
+                    <option value="Facebook">Facebook</option>
+                    <option value="Instagram">Instagram</option>
+                    <option value="LinkedIn">LinkedIn</option>
+                    <option value="Twitter">Twitter</option>
+                    <option value="TikTok">TikTok</option>
+                    <option value="Google Ads">Google Ads</option>
+                    <option value="Email">Email Marketing</option>
+                </select>
+            </div>
+
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="budget">Budget (USD)</label>
+                    <input type="number" id="budget" name="budget" required
+                           placeholder="e.g., 5000" min="100">
+                </div>
+
+                <div class="form-group">
+                    <label for="campaign_goal">Campaign Goal</label>
+                    <select id="campaign_goal" name="campaign_goal" required>
+                        <option value="">Select a goal</option>
+                        <option value="Brand Awareness">Brand Awareness</option>
+                        <option value="Lead Generation">Lead Generation</option>
+                        <option value="Sales Conversion">Sales Conversion</option>
+                        <option value="Customer Engagement">Customer Engagement</option>
+                        <option value="Product Launch">Product Launch</option>
+                    </select>
+                </div>
+            </div>
+
+            <button type="submit" class="btn btn-primary btn-large">
+                Generate Campaign
+            </button>
+        </form>
+    </div>
+
+    <div id="resultContainer" class="result-container" style="display: none;">
+        <div class="result-header">
+            <h2>Your AI-Generated Marketing Campaign</h2>
+            <button id="copyButton" class="btn btn-secondary">Copy to Clipboard</button>
+        </div>
+
+        <div class="result-sections">
+            <div class="result-section">
+                <h3>Campaign Objective</h3>
+                <p id="campaign-objective"></p>
+            </div>
+
+            <div class="result-section">
+                <h3>Content Ideas</h3>
+                <ul id="content-ideas"></ul>
+            </div>
+
+            <div class="result-section">
+                <h3>Ad Copy Variations</h3>
+                <div id="ad-copy"></div>
+            </div>
+
+            <div class="result-section">
+                <h3>Call to Action</h3>
+                <p id="call-to-action"></p>
+            </div>
+
+            <div class="result-section">
+                <h3>Hashtags</h3>
+                <div id="hashtags" class="hashtags-container"></div>
+            </div>
+
+            <div class="result-section">
+                <h3>Campaign Timeline</h3>
+                <p id="timeline"></p>
+            </div>
+
+            <div class="result-section">
+                <h3>Expected Engagement Metrics</h3>
+                <p id="metrics"></p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.getElementById('campaignForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    
+    const formData = new FormData(e.target);
+    const data = Object.fromEntries(formData);
+    
+    showLoading('Generating your marketing campaign...');
+    
+    try {
+        const response = await fetch('/api/generate_campaign', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(data)
+        });
+        
+        const result = await response.json();
+        
+        if (result.success) {
+            displayCampaignResult(result.campaign);
+        } else {
+            alert('Error: ' + result.error);
+        }
+    } catch (error) {
+        alert('Error generating campaign: ' + error.message);
+    } finally {
+        hideLoading();
+    }
+});
+
+function displayCampaignResult(campaign) {
+    document.getElementById('campaign-objective').textContent = campaign.objective || 'No objective provided';
+    
+    const ideasList = document.getElementById('content-ideas');
+    ideasList.innerHTML = '';
+    (campaign.content_ideas || []).forEach(idea => {
+        const li = document.createElement('li');
+        li.textContent = idea;
+        ideasList.appendChild(li);
+    });
+    
+    const adCopyDiv = document.getElementById('ad-copy');
+    adCopyDiv.innerHTML = '';
+    (campaign.ad_copy || []).forEach((copy, index) => {
+        const div = document.createElement('div');
+        div.className = 'ad-copy-item';
+        div.innerHTML = `<strong>Version ${index + 1}:</strong><p>${copy}</p>`;
+        adCopyDiv.appendChild(div);
+    });
+    
+    document.getElementById('call-to-action').textContent = campaign.call_to_action || 'No CTA provided';
+    
+    const hashtagsDiv = document.getElementById('hashtags');
+    hashtagsDiv.innerHTML = '';
+    (campaign.hashtags || []).forEach(tag => {
+        const span = document.createElement('span');
+        span.className = 'hashtag';
+        span.textContent = tag;
+        hashtagsDiv.appendChild(span);
+    });
+    
+    document.getElementById('timeline').textContent = campaign.timeline || 'No timeline provided';
+    document.getElementById('metrics').textContent = campaign.metrics || 'No metrics provided';
+    
+    document.getElementById('resultContainer').style.display = 'block';
+    document.getElementById('resultContainer').scrollIntoView({ behavior: 'smooth' });
+}
+
+document.getElementById('copyButton').addEventListener('click', () => {
+    const resultText = document.querySelector('.result-sections').innerText;
+    navigator.clipboard.writeText(resultText).then(() => {
+        const btn = document.getElementById('copyButton');
+        btn.textContent = 'Copied!';
+        setTimeout(() => {
+            btn.textContent = 'Copy to Clipboard';
+        }, 2000);
+    });
+});
+</script>
+{% endblock %}
