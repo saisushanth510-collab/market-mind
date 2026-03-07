@@ -10,18 +10,19 @@ class TextCleaner:
         except json.JSONDecodeError:
             data = {}
 
-        # Ensure all required fields exist
+        # Return structured campaign data
         return {
-            "campaign_objective": data.get("campaign_objective", "No objective provided"),
+            "objective": data.get("campaign_objective", "No objective provided"),
             "content_ideas": data.get("content_ideas", []),
             "ad_copy": data.get("ad_copy", []),
             "call_to_action": data.get("call_to_action", "No CTA provided"),
             "hashtags": data.get("hashtags", []),
-            "campaign_timeline": data.get("campaign_timeline", "No timeline provided"),
-            "expected_metrics": data.get("expected_metrics", "No metrics provided")
+            "timeline": data.get("campaign_timeline", "No timeline provided"),
+            "metrics": data.get("expected_metrics", "No metrics provided")
         }
 
     def clean_pitch_response(self, text):
+        """Parse sales pitch JSON"""
         try:
             data = json.loads(text)
         except json.JSONDecodeError:
@@ -38,6 +39,7 @@ class TextCleaner:
         }
 
     def parse_lead_score(self, text):
+        """Parse lead scoring JSON"""
         try:
             data = json.loads(text)
         except json.JSONDecodeError:
