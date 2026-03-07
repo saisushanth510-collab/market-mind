@@ -162,13 +162,15 @@ def generate_pitch():
 @app.route('/api/score_lead', methods=['POST'])
 def score_lead():
     try:
-        data = request.json
-        
+        data = request.get_json()
+        if not data:
+            return jsonify({'error': 'No JSON data received'}), 400
+
         # Validate required fields
         required_fields = ['lead_name', 'company', 'budget', 'business_need', 
-                          'urgency', 'decision_authority']
+                           'urgency', 'decision_authority']
         for field in required_fields:
-            if field not in data:
+            if field not in data or not data[field]:
                 return jsonify({'error': f'Missing field: {field}'}), 400
 
         # ----- MOCK AI RESPONSE FOR TESTING -----
@@ -181,11 +183,25 @@ def score_lead():
           "recommended_actions": ["Schedule call","Send demo","Follow up next week"]
         }
         """
+
+        # Parse and clean AI response
         lead_score_data = text_cleaner.parse_lead_score(ai_response)
+
+        # Ensure recommended_actions is always an array
+        if 'recommended_actions' not in lead_score_data or not isinstance(lead_score_data['recommended_actions'], list):
+            lead_score_data['recommended_actions'] = []
+
+        # Add input details to output (optional, useful for frontend)
+        lead_score_data['lead_name'] = data['lead_name']
+        lead_score_data['company'] = data['company']
+        lead_score_data['budget'] = data['budget']
+        lead_score_data['business_need'] = data['business_need']
+        lead_score_data['urgency'] = data['urgency']
+        lead_score_data['decision_authority'] = data['decision_authority']
 
         # ---- DEBUG PRINT ----
         print("Cleaned lead score response:", lead_score_data)
-        
+
         # Store scored lead
         lead_data = {
             'id': len(generated_content['leads']) + 1,
@@ -194,12 +210,12 @@ def score_lead():
             'output': lead_score_data
         }
         generated_content['leads'].append(lead_data)
-        
-        return jsonify({'success': True, 'lead_score': lead_score_data})
-    
-    except Exception as e:
-        return jsonify({'error': str(e)}), 500
 
+        return jsonify({'success': True, 'lead_score': lead_score_data})
+
+    except Exception as e:
+        print("Error scoring lead:", str(e))
+        return jsonify({'error': str(e)}), 500
 # ------------------- History Route -------------------
 @app.route('/api/get_history/<content_type>')
 def get_history(content_type):
