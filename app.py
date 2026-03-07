@@ -93,47 +93,69 @@ def generate_campaign():
         return jsonify({'error': str(e)}), 500
 
 # ------------------- Pitch Route -------------------
+# ------------------- Pitch Route -------------------
 @app.route('/api/generate_pitch', methods=['POST'])
 def generate_pitch():
     try:
-        data = request.json
+        # Get JSON data safely
+        data = request.get_json()
+
+        if not data:
+            return jsonify({'error': 'No JSON data received'}), 400
         
         # Validate required fields
-        required_fields = ['product_name', 'customer_persona', 'industry', 
-                          'company_size', 'budget_range']
+        required_fields = [
+            'product_name',
+            'customer_persona',
+            'industry',
+            'company_size',
+            'budget_range'
+        ]
+
         for field in required_fields:
-            if field not in data:
+            if field not in data or not data[field]:
                 return jsonify({'error': f'Missing field: {field}'}), 400
 
         # ----- MOCK AI RESPONSE FOR TESTING -----
         ai_response = """
         {
-          "elevator_pitch": "Our EcoSmart bottle keeps you hydrated smarter!",
-          "value_proposition": "Eco-friendly, smart hydration tracking, convenient design",
-          "key_differentiators": ["Smart sensor","Sleek design","Eco-friendly materials"],
-          "pain_points_solved": "Forgets to drink, uses disposable bottles, lacks smart tracking",
-          "call_to_action": "Buy Now",
-          "email_pitch_template": "Introducing EcoSmart Bottle...",
-          "linkedin_outreach_message": "Hey [Name], check out our EcoSmart bottle..."
+            "elevator_pitch": "EcoSmart Bottle helps you stay hydrated with smart reminders and eco-friendly design.",
+            "value_proposition": "A smart reusable bottle that tracks hydration and reduces plastic waste.",
+            "key_differentiators": [
+                "Built-in hydration sensor",
+                "Mobile hydration tracking",
+                "Eco-friendly materials"
+            ],
+            "pain_points_solved": "People forget to drink enough water and rely on disposable plastic bottles.",
+            "call_to_action": "Start hydrating smarter with EcoSmart Bottle today.",
+            "email_pitch_template": "Hi [Name], we created EcoSmart Bottle to help people stay hydrated using smart reminders while reducing plastic waste. Would you like a quick demo?",
+            "linkedin_outreach_message": "Hi [Name], I wanted to introduce EcoSmart Bottle – a smart hydration solution designed for busy professionals."
         }
         """
+
+        # Clean and structure the response
         cleaned_response = text_cleaner.clean_pitch_response(ai_response)
 
-        # ---- DEBUG PRINT ----
-        print("Cleaned pitch response:", cleaned_response)
-        
+        # Debug output in terminal
+        print("Cleaned Pitch Response:", cleaned_response)
+
         # Store generated pitch
         pitch_data = {
-            'id': len(generated_content['pitches']) + 1,
-            'timestamp': datetime.now().isoformat(),
-            'input': data,
-            'output': cleaned_response
+            "id": len(generated_content['pitches']) + 1,
+            "timestamp": datetime.now().isoformat(),
+            "input": data,
+            "output": cleaned_response
         }
+
         generated_content['pitches'].append(pitch_data)
-        
-        return jsonify({'success': True, 'pitch': cleaned_response})
-    
+
+        return jsonify({
+            "success": True,
+            "pitch": cleaned_response
+        })
+
     except Exception as e:
+        print("Pitch generation error:", str(e))
         return jsonify({'error': str(e)}), 500
 
 # ------------------- Lead Scoring Route -------------------
